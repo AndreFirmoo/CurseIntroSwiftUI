@@ -20,8 +20,6 @@ class EmojiMemoryGame {
             return emojis[pairIndex]
         }
     }
-       
-    
     //MARK: - Access to the Model
 
     var cards: Array<MemoryGame<String>.Card> {
