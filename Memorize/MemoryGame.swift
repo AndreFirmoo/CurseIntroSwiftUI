@@ -11,11 +11,32 @@
 
 import Foundation
 
-struct MemoryGame <CardContent> {
+struct MemoryGame <CardContent> where CardContent: Equatable {
     var cards: Array<Card>
     
-    func choose(card: Card) {
-        print("card chosen: \(card)")
+    var indexOfTheOneAndOnlyFaceUpCard: Int? {
+        get {cards.indices.filter { cards[$0].isFaceUp }.only}
+        set {
+            for index in cards.indices {
+                cards[index].isFaceUp = index == newValue
+            }
+        }
+    }
+
+    mutating func choose(card: Card) {
+        
+        if  let chosenIndex = cards.fistIndex(matching: card) , !cards[chosenIndex].isFaceUp, !cards[chosenIndex].isMatched{
+            if let potencioalMatching = indexOfTheOneAndOnlyFaceUpCard {
+                if cards[chosenIndex].content == cards[potencioalMatching].content{
+                    cards[chosenIndex].isMatched = true
+                    cards[potencioalMatching].isMatched = true
+                }
+                self.cards[chosenIndex].isFaceUp = true
+            }else {
+                indexOfTheOneAndOnlyFaceUpCard = chosenIndex
+            }
+        }
+      
     }
     
     init(numberOfPairsOfCards: Int, cardContentFactory: (Int)-> CardContent){
@@ -30,7 +51,7 @@ struct MemoryGame <CardContent> {
     }
     
     struct Card : Identifiable {
-        var isFaceUp: Bool = true
+        var isFaceUp: Bool = false
         var isMatched: Bool = false
         var content: CardContent
         var id: Int
