@@ -62,3 +62,133 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 }
 
+final public class SnackBar: UIView {
+    
+        /// Duration of message display
+    public var duration: Float = 3
+    
+    private lazy var iconImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+    
+    private lazy var messageLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.numberOfLines = 0
+        label.font = label.font.withSize(16)
+        return label
+    }()
+    
+    var bottomConstraints: NSLayoutConstraint?
+    
+    public init(message: String, backgroundColor: UIColor) {
+        super.init(frame: .zero)
+        
+        self.translatesAutoresizingMaskIntoConstraints = false
+        self.layer.cornerRadius = 8
+        self.backgroundColor = backgroundColor
+        
+        addShadow()
+        layoutView()
+        messageLabel.text = message
+    }
+    
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func addShadow() {
+        self.layer.shadowColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.2).cgColor
+        self.layer.shadowOffset = CGSize(width: 0, height: 4)
+        self.layer.shadowOpacity = 1
+        self.layer.shadowRadius = 6
+    }
+    
+        /// Explicit snack bar dismiss
+    @objc func dismissSnackBar() {
+        UIView.animate(
+            withDuration: TimeInterval(0.2),
+            delay: 0,
+            options: .allowUserInteraction
+        ) {
+            self.transform = CGAffineTransform(translationX: 0, y: -self.frame.height)
+            
+        }
+    }
+}
+
+    // MARK: - Animations
+extension SnackBar {
+        /// Sends snack bar down and starts progress animation
+    public func showSnackBar() {
+        self.transform = CGAffineTransform(translationX: 0, y: self.frame.height + 15)
+        
+        UIView.animate(
+            withDuration: TimeInterval(0.2),
+            delay: 0,
+            options: .allowUserInteraction
+        ) {
+            self.transform = CGAffineTransform.identity
+            UIAccessibility.post(notification: .screenChanged, argument: self)
+        } completion: { _ in
+            self.hideSnackBar()
+        }
+    }
+    
+    private func hideSnackBar() {
+        DispatchQueue.main.asyncAfter(
+            deadline: DispatchTime.now() + Double(duration),
+            execute: {
+                UIView.animate(
+                    withDuration: TimeInterval(0.2),
+                    delay: 0,
+                    options: .allowUserInteraction
+                ) {
+                    self.transform = CGAffineTransform(translationX: 0, y: self.frame.height + 15)
+                } completion: { _ in
+                    guard let parentView = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) else { return }
+                    UIAccessibility.post(notification: .screenChanged, argument: parentView)
+                    self.removeFromSuperview()
+                }
+            }
+        )
+    }
+}
+
+    // MARK: - View Cycle
+extension SnackBar {
+    private func layoutView() {
+        guard let parentView = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) else { return }
+        
+            // MARK: - View hierarchy
+        parentView.addSubview(self)
+        self.addSubview(iconImageView)
+        self.addSubview(messageLabel)
+        
+            // MARK: - component constraints
+        NSLayoutConstraint.activate([
+            self.bottomAnchor.constraint(equalTo: parentView.safeAreaLayoutGuide.bottomAnchor, constant: -15),
+            self.leadingAnchor.constraint(equalTo: parentView.leadingAnchor, constant: 16),
+            self.trailingAnchor.constraint(equalTo: parentView.trailingAnchor, constant: -16)
+        ])
+        
+            // MARK: - iconImageView constraints
+        NSLayoutConstraint.activate([
+            iconImageView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 18),
+            iconImageView.centerYAnchor.constraint(equalTo: self.centerYAnchor),
+            iconImageView.heightAnchor.constraint(equalToConstant: 20),
+            iconImageView.widthAnchor.constraint(equalToConstant: 20)
+        ])
+        
+            // MARK: - messageLabel constraints
+        NSLayoutConstraint.activate([
+            messageLabel.topAnchor.constraint(equalTo: self.topAnchor, constant: 12),
+            messageLabel.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 18),
+            messageLabel.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -12)
+        ])
+    }
+}
+
